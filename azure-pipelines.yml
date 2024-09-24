@@ -1,0 +1,37 @@
+# azure-pipelines.yml
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  azureSubscription: 'AzureMLServiceConnection'
+  resourceGroup: 'myResourceGroup'
+  workspaceName: 'myWorkspace'
+  experimentName: 'myExperiment'
+  computeTarget: 'myCompute'
+  modelName: 'myModel'
+
+steps:
+- task: UsePythonVersion@0
+  inputs:
+    versionSpec: '3.x'
+    addToPath: true
+
+- script: |
+    pip install azureml-sdk
+  displayName: 'Install Azure ML SDK'
+
+- script: |
+    python train.py
+  displayName: 'Train Model'
+
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: $(azureSubscription)
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az ml model register --model-path outputs/model.joblib --model-name $(modelName) --workspace-name $(workspaceName) --resource-group $(resourceGroup)
+  displayName: 'Register Model'
